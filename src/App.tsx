@@ -45,7 +45,7 @@ const settingsTitles: Record<SettingsSection, string> = {
   export: 'Export',
 }
 
-/** Tab title for pages without a board or card, in Trello's "Page | Workspace | Trello" form. */
+/** Tab title for pages without a board or card, in Trello's "Page | Workspace" form; Shell adds "| Trello Impact". */
 function pageName(route: Route, workspaceName: string) {
   if (route.name === 'home') return 'Home'
   if (route.name === 'templates') return 'Templates'
@@ -67,7 +67,7 @@ function Shell() {
 
   useEffect(() => {
     const board = boardId ? boards[boardId] : undefined
-    document.title = card ? `${card.title} | Trello` : board ? `${board.title} | Trello` : `${pageName(route, workspace.name)} | Trello`
+    document.title = `${card ? card.title : board ? board.title : pageName(route, workspace.name)} | Trello Impact`
   }, [card, boardId, boards, workspace.name, route])
 
   return (
