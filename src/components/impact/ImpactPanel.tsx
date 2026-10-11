@@ -1,12 +1,17 @@
+import { cssMap } from '@atlaskit/css'
 import { useEffect, useRef, useState } from 'react'
 import { Box } from '@atlaskit/primitives/compiled/box'
 import { useImpact } from '../../impact/ImpactProvider'
 import type { Card } from '../../types'
-import { styles } from './styles'
 import { ConnectionReview, QuestionsOnCard } from './ConnectionReview'
 import { DraftStage, CheckingStage, ReviewStage, SourceStage } from './ReviewStage'
 import { DescriptionReviewStage } from './DescriptionReview'
 import { ApplyingStage, ResultsStage, LaterStage } from './ResultsStage'
+import { token } from '@atlaskit/tokens'
+
+const styles = cssMap({
+  panel: { display: 'flex', flexDirection: 'column', gap: token('space.0') },
+})
 
 /** The Impact panel on the right of the card popup. It replaces Comments and activity while the Impact tab is selected. */
 export function ImpactPanel({ card }: { card: Card }) {

@@ -15,6 +15,7 @@ import { Text } from '@atlaskit/primitives/compiled/text'
 import Textfield from '@atlaskit/textfield'
 import { token } from '@atlaskit/tokens'
 import { createId } from '../../lib/random'
+import { useScreenBoardId } from '../../state/screen'
 import { useAppState, useDispatch } from '../../state/store'
 import { BoardCard } from '../board/BoardCard'
 import { isCardDragData, type ListDropData } from '../board/dnd'
@@ -43,6 +44,7 @@ export function InboxPanel() {
   const { inboxListId, inboxBoardId, lists, cards, boards, preferences } = useAppState()
   const dispatch = useDispatch()
   const { showFlag } = useFlags()
+  const screenBoardId = useScreenBoardId()
   const listRef = useRef<HTMLOListElement>(null)
   const [draft, setDraft] = useState('')
   const [isFilterOpen, setFilterOpen] = useState(false)
@@ -72,6 +74,7 @@ export function InboxPanel() {
     <Panel
       icon={InboxIcon}
       title="Inbox"
+      accent={screenBoardId ? boards[screenBoardId]?.accent : undefined}
       actions={
         <>
           <IconButton appearance="subtle" icon={FilterIcon} label="Filter Inbox" isSelected={isFilterOpen} onClick={() => setFilterOpen((v) => !v)} />

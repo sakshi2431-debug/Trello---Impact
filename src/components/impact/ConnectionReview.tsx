@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import Button from '@atlaskit/button/new'
 import { Checkbox } from '@atlaskit/checkbox'
-import { cx } from '@atlaskit/css'
+import { cssMap, cx } from '@atlaskit/css'
 import { Box } from '@atlaskit/primitives/compiled/box'
 import { Inline } from '@atlaskit/primitives/compiled/inline'
 import { Stack } from '@atlaskit/primitives/compiled/stack'
 import { Text } from '@atlaskit/primitives/compiled/text'
 import { findRelations, isCardDone, unfinishedPrerequisites, type Relation } from '../../impact/dependencies'
 import { boardScope, resolveMentions } from '../../impact/scenarios'
+import { MentionText } from '../common/MentionText'
 import { joinNames, ownerName, plural, summarize } from '../../impact/format'
 import { simulation, STEP_MS, wait } from '../../impact/simulation'
 import { dayUnit, formatShortDate, numberWord } from '../../impact/timing'
@@ -17,9 +18,29 @@ import { useAppState, useDispatch } from '../../state/store'
 import { createId } from '../../lib/random'
 import type { Card } from '../../types'
 import { TextAction, PanelHeading, ReviewHeading, EvidenceDetails, InlineTextEditor, LeftOutNote, ActionRow, StatusIcon } from './shared'
-import { styles } from './styles'
 import { useDisclosure, useEditFocus } from './focus'
 import { type RowIcon, outcomeIcon } from './status'
+import { token } from '@atlaskit/tokens'
+
+const styles = cssMap({
+  section: {
+    paddingBlock: token('space.200'),
+    borderBlockStartWidth: token('border.width'),
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: token('color.border'),
+  },
+  // Aligns content with the checkbox labels of optional actions.
+  indent: { paddingInlineStart: token('space.300') },
+  footer: {
+    position: 'sticky',
+    insetBlockEnd: token('space.negative.200'),
+    paddingBlockEnd: token('space.200'),
+    backgroundColor: token('elevation.surface.sunken'),
+  },
+  wrap: { whiteSpace: 'pre-wrap' },
+  // Status icon beside the row text; the icon's width plus the gap matches the checkbox indent.
+  statusRow: { display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: token('space.100'), alignItems: 'start' },
+})
 
 /** How a relation reads from this card's side, e.g. "Ready 5 working days after this card". */
 function relationPhrase(relation: Relation, isAnchor: boolean) {
@@ -544,7 +565,7 @@ function ConnectionActionRow({
         ) : (
           <Stack space="space.075">
             <Box xcss={styles.wrap}>
-              <Text>{action.text}</Text>
+              <MentionText text={action.text} boardId={card.boardId} />
             </Box>
             <Text size="small" color="color.text.subtle">
               {isLink

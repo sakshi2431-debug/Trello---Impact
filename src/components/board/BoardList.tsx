@@ -86,7 +86,10 @@ const styles = cssMap({
   verticalTitle: { writingMode: 'vertical-rl', whiteSpace: 'nowrap' },
 })
 
-/** Trello list colours map to pale ADS accent backgrounds so cards stay legible on top. */
+/**
+ * Trello list colours map to pale ADS accent backgrounds so cards stay legible on top. Index this map inside the
+ * `xcss` expression: Compiled only emits CSS for styles it can see used in JSX.
+ */
 const listColorStyles = cssMap({
   green: { backgroundColor: token('color.background.accent.green.subtler') },
   yellow: { backgroundColor: token('color.background.accent.yellow.subtler') },
@@ -112,7 +115,6 @@ export function BoardList({ list, cards, labels, hiddenCount, showLabelText }: P
   const scrollRef = useRef<HTMLOListElement>(null)
   const [isOver, setOver] = useState(false)
   const [composer, setComposer] = useState<'top' | 'bottom' | null>(null)
-  const colorStyle = list.color ? listColorStyles[list.color] : undefined
 
   useEffect(() => {
     const element = scrollRef.current
@@ -134,7 +136,7 @@ export function BoardList({ list, cards, labels, hiddenCount, showLabelText }: P
   if (list.isCollapsed) {
     return (
       <Pressable
-        xcss={cx(styles.collapsed, colorStyle)}
+        xcss={cx(styles.collapsed, list.color && listColorStyles[list.color])}
         aria-label={`Expand list ${list.title} (${cards.length} cards)`}
         onClick={() => dispatch({ type: 'list/toggleCollapsed', listId: list.id })}
       >
@@ -150,7 +152,7 @@ export function BoardList({ list, cards, labels, hiddenCount, showLabelText }: P
   }
 
   return (
-    <Box as="section" xcss={cx(styles.list, colorStyle)} aria-label={list.title}>
+    <Box as="section" xcss={cx(styles.list, list.color && listColorStyles[list.color])} aria-label={list.title}>
       <Box xcss={styles.header}>
         <Inline space="space.025" alignBlock="center">
           <Box xcss={styles.title}>

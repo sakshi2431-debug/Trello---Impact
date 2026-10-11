@@ -1,5 +1,6 @@
 import { type ReactNode, type Ref } from 'react'
 import Button from '@atlaskit/button/new'
+import { cssMap } from '@atlaskit/css'
 import { Box } from '@atlaskit/primitives/compiled/box'
 import { Inline } from '@atlaskit/primitives/compiled/inline'
 import { Stack } from '@atlaskit/primitives/compiled/stack'
@@ -13,8 +14,17 @@ import { navigate, paths } from '../../router'
 import { useAppState } from '../../state/store'
 import type { Card } from '../../types'
 import { TextAction, PanelHeading, ActionRow } from './shared'
-import { styles } from './styles'
 import { changeName, type RowIcon, outcomeIcon } from './status'
+import { token } from '@atlaskit/tokens'
+
+const styles = cssMap({
+  section: {
+    paddingBlock: token('space.200'),
+    borderBlockStartWidth: token('border.width'),
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: token('color.border'),
+  },
+})
 
 function changeStatus(session: ImpactSession, outcome: Outcome | undefined, card: Card, listTitle: string, isFinal: boolean) {
   if (session.kind === 'description') {

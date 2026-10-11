@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import Button from '@atlaskit/button/new'
-import { cx } from '@atlaskit/css'
+import { cssMap, cx } from '@atlaskit/css'
 import { Label } from '@atlaskit/form'
 import Heading from '@atlaskit/heading'
 import AiSparkleIcon from '@atlaskit/icon/core/ai-sparkle'
@@ -23,7 +23,44 @@ import { joinNames } from '../../impact/format'
 import type { ReviewScope } from '../../impact/types'
 import { useDisclosure } from './focus'
 import type { RowIcon } from './status'
-import { styles } from './styles'
+
+const styles = cssMap({
+  header: { paddingBlockEnd: token('space.150') },
+  section: {
+    paddingBlock: token('space.200'),
+    borderBlockStartWidth: token('border.width'),
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: token('color.border'),
+  },
+  evidence: {
+    paddingInlineStart: token('space.150'),
+    borderInlineStartWidth: token('border.width.selected'),
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: token('color.border'),
+  },
+  box: {
+    padding: token('space.150'),
+    borderRadius: token('radius.medium'),
+    backgroundColor: token('elevation.surface'),
+  },
+  textAction: {
+    font: token('font.body'),
+    color: token('color.link'),
+    textDecorationLine: 'underline',
+    backgroundColor: token('color.background.neutral.subtle'),
+    padding: token('space.0'),
+    transitionProperty: 'color',
+    transitionDuration: token('motion.duration.xshort'),
+    transitionTimingFunction: token('motion.easing.out.practical'),
+    '&:hover': { color: token('color.link.pressed') },
+    '@media (prefers-reduced-motion: reduce)': { transitionDuration: token('motion.duration.instant') },
+  },
+  textActionSmall: { font: token('font.body.small') },
+  headingRow: { display: 'flex', alignItems: 'center', gap: token('space.100') },
+  // Status icon beside the row text; the icon's width plus the gap matches the checkbox indent.
+  statusRow: { display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: token('space.100'), alignItems: 'start' },
+  statusIcon: { paddingBlockStart: token('space.025') },
+})
 
 /** Underlined text action, matching the link-style actions in the Impact designs. */
 export const TextAction = forwardRef<HTMLButtonElement, { children: ReactNode; onClick: () => void; isSmall?: boolean; label?: string }>(function TextAction(

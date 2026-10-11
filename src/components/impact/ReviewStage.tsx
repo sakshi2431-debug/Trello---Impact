@@ -1,7 +1,7 @@
 import { useState, type Ref } from 'react'
 import Button from '@atlaskit/button/new'
 import { Checkbox } from '@atlaskit/checkbox'
-import { cx } from '@atlaskit/css'
+import { cssMap, cx } from '@atlaskit/css'
 import { Label } from '@atlaskit/form'
 import ArrowRightIcon from '@atlaskit/icon/core/arrow-right'
 import ClockIcon from '@atlaskit/icon/core/clock'
@@ -19,6 +19,7 @@ import Textfield from '@atlaskit/textfield'
 import { token } from '@atlaskit/tokens'
 import { useImpact } from '../../impact/ImpactProvider'
 import { isEvidenceFresh, resolveMentions } from '../../impact/scenarios'
+import { MentionText } from '../common/MentionText'
 import { joinNames, ownerName, plural } from '../../impact/format'
 import { dayUnit, estimateTiming, formatCountedDays, formatDate, formatShortDate, shiftLabel } from '../../impact/timing'
 import { PRIMARY_ACTION_ID, type ChainStep, type CommentProposal, type ImpactSession } from '../../impact/types'
@@ -27,8 +28,52 @@ import { navigate, paths } from '../../router'
 import { useAppState, useDispatch } from '../../state/store'
 import type { Card } from '../../types'
 import { TextAction, Reveal, PanelHeading, ReviewHeading, EvidenceDetails, InlineTextEditor, LeftOutNote } from './shared'
-import { styles } from './styles'
 import { useDisclosure, useEditFocus } from './focus'
+
+const styles = cssMap({
+  section: {
+    paddingBlock: token('space.200'),
+    borderBlockStartWidth: token('border.width'),
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: token('color.border'),
+  },
+  // Aligns content with the checkbox labels of optional actions.
+  indent: { paddingInlineStart: token('space.300') },
+  evidence: {
+    paddingInlineStart: token('space.150'),
+    borderInlineStartWidth: token('border.width.selected'),
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: token('color.border'),
+  },
+  box: {
+    padding: token('space.150'),
+    borderRadius: token('radius.medium'),
+    backgroundColor: token('elevation.surface'),
+  },
+  checking: {
+    paddingBlock: token('space.400'),
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: token('space.150'),
+    textAlign: 'center',
+  },
+  footer: {
+    position: 'sticky',
+    insetBlockEnd: token('space.negative.200'),
+    paddingBlockEnd: token('space.200'),
+    backgroundColor: token('elevation.surface.sunken'),
+  },
+  previousDate: {
+    paddingBlock: token('space.050'),
+    paddingInline: token('space.100'),
+    borderRadius: token('radius.small'),
+    backgroundColor: token('color.background.neutral'),
+  },
+  wrap: { whiteSpace: 'pre-wrap' },
+  // Status icon beside the row text; the icon's width plus the gap matches the checkbox indent.
+  statusRow: { display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: token('space.100'), alignItems: 'start' },
+})
 
 export function DraftStage({ kind }: { kind: ImpactSession['kind'] }) {
   return (
@@ -253,7 +298,7 @@ export function CommentAction({
         ) : (
           <Stack space="space.075">
             <Box xcss={styles.wrap}>
-              <Text>{proposal.text}</Text>
+              <MentionText text={proposal.text} boardId={card.boardId} />
             </Box>
             <Text size="small" color="color.text.subtle">
               {`Post on ${targetTitle} · ${mentions.length ? `Mention ${mentions.join(', ')}` : 'No mention'}`}

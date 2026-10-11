@@ -35,6 +35,27 @@ export default function App() {
   )
 }
 
+const settingsTitles: Record<SettingsSection, string> = {
+  profile: 'Profile and visibility',
+  activity: 'Activity',
+  cards: 'Cards',
+  preferences: 'Settings',
+  members: 'Members',
+  workspace: 'Workspace settings',
+  export: 'Export',
+}
+
+/** Tab title for pages without a board or card, in Trello's "Page | Workspace | Trello" form. */
+function pageName(route: Route, workspaceName: string) {
+  if (route.name === 'home') return 'Home'
+  if (route.name === 'templates') return 'Templates'
+  if (route.name === 'settings') {
+    const title = settingsTitles[route.section]
+    return ['members', 'workspace', 'export'].includes(route.section) ? `${title} | ${workspaceName}` : title
+  }
+  return `Boards | ${workspaceName}`
+}
+
 function Shell() {
   const route = useRoute()
   const { cards, boards, workspace, inboxBoardId } = useAppState()
@@ -46,8 +67,8 @@ function Shell() {
 
   useEffect(() => {
     const board = boardId ? boards[boardId] : undefined
-    document.title = card ? `${card.title} | Trello` : board ? `${board.title} | Trello` : `Boards | ${workspace.name} | Trello`
-  }, [card, boardId, boards, workspace.name])
+    document.title = card ? `${card.title} | Trello` : board ? `${board.title} | Trello` : `${pageName(route, workspace.name)} | Trello`
+  }, [card, boardId, boards, workspace.name, route])
 
   return (
     <>

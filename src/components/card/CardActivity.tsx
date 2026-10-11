@@ -15,6 +15,7 @@ import { formatRelativeTime } from '../../lib/dates'
 import { useAppState, useDispatch } from '../../state/store'
 import type { Activity, Card, Comment as CardComment } from '../../types'
 import { MemberAvatar } from '../common/MemberAvatar'
+import { MentionText } from '../common/MentionText'
 import { SectionHeading } from './SectionHeading'
 
 const styles = cssMap({
@@ -154,7 +155,7 @@ function CommentEntry({ card, comment }: { card: Card; comment: CardComment }) {
         ) : (
           <Stack space="space.100">
             <Box xcss={styles.text}>
-              <Text>{comment.text}</Text>
+              <MentionText text={comment.text} boardId={card.boardId} />
             </Box>
             {comment.impact && <ImpactQuestionAnswer card={card} comment={comment} />}
           </Stack>

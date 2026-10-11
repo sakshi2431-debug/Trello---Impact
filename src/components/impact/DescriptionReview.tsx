@@ -1,7 +1,7 @@
 import { useState, type Ref } from 'react'
 import Button from '@atlaskit/button/new'
 import { Checkbox } from '@atlaskit/checkbox'
-import { cx } from '@atlaskit/css'
+import { cssMap, cx } from '@atlaskit/css'
 import { Label } from '@atlaskit/form'
 import { Box } from '@atlaskit/primitives/compiled/box'
 import { Inline } from '@atlaskit/primitives/compiled/inline'
@@ -17,9 +17,33 @@ import { navigate, paths } from '../../router'
 import { useAppState } from '../../state/store'
 import type { Card } from '../../types'
 import { TextAction, ReviewHeading, EvidenceDetails, InlineTextEditor, LeftOutNote } from './shared'
-import { styles } from './styles'
 import { useDisclosure, useEditFocus } from './focus'
 import { CommentAction } from './ReviewStage'
+import { token } from '@atlaskit/tokens'
+
+const styles = cssMap({
+  section: {
+    paddingBlock: token('space.200'),
+    borderBlockStartWidth: token('border.width'),
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: token('color.border'),
+  },
+  // Aligns content with the checkbox labels of optional actions.
+  indent: { paddingInlineStart: token('space.300') },
+  evidence: {
+    paddingInlineStart: token('space.150'),
+    borderInlineStartWidth: token('border.width.selected'),
+    borderInlineStartStyle: 'solid',
+    borderInlineStartColor: token('color.border'),
+  },
+  footer: {
+    position: 'sticky',
+    insetBlockEnd: token('space.negative.200'),
+    paddingBlockEnd: token('space.200'),
+    backgroundColor: token('elevation.surface.sunken'),
+  },
+  wrap: { whiteSpace: 'pre-wrap' },
+})
 
 /**
  * Scenario 2: an edited description. Header > Change > Finding > Actions > Summary (spec PANEL STRUCTURE). One finding
