@@ -57,8 +57,8 @@ const styles = cssMap({
 interface Props {
   isCommentsOpen: boolean
   onToggleComments: () => void
-  /** Impact reopens the current in-session review; until one exists the tab is unavailable. */
-  impact?: { isOpen: boolean; onToggle: () => void }
+  /** Impact shows this card's review, or how to start one. */
+  impact: { isOpen: boolean; onToggle: () => void }
 }
 
 /** The floating tab bar Trello shows under an open card, with Impact added as a fourth tab. */
@@ -92,19 +92,11 @@ export function CardTabBar({ isCommentsOpen, onToggleComments, impact }: Props) 
                 Comments
               </Button>
             </Tab>
-            {impact ? (
-              <Tab isSelected={impact.isOpen}>
-                <Button appearance="subtle" iconBefore={AiSparkleIcon} isSelected={impact.isOpen} aria-pressed={impact.isOpen} onClick={impact.onToggle}>
-                  Impact
-                </Button>
-              </Tab>
-            ) : (
-              <Tooltip content="Review impact from a new card or a date change to open it here">
-                <Button appearance="subtle" iconBefore={AiSparkleIcon} isDisabled>
-                  Impact
-                </Button>
-              </Tooltip>
-            )}
+            <Tab isSelected={impact.isOpen}>
+              <Button appearance="subtle" iconBefore={AiSparkleIcon} isSelected={impact.isOpen} aria-pressed={impact.isOpen} onClick={impact.onToggle}>
+                Impact
+              </Button>
+            </Tab>
           </Inline>
         </Box>
       </Box>

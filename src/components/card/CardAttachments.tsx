@@ -20,6 +20,7 @@ import type { Attachment, Card } from '../../types'
 import { BoardSwatch } from '../common/BoardSwatch'
 import { LabelChip } from '../common/LabelChip'
 import { SectionHeading } from './SectionHeading'
+import { safeLinkUrl } from '../../lib/urls'
 
 const styles = cssMap({
   body: { paddingInlineStart: token('space.400') },
@@ -86,8 +87,8 @@ export function CardAttachments({ card, addButton }: { card: Card; addButton: Re
                 <Box key={a.id} xcss={styles.linkRow}>
                   <LinkIcon label="" color={token('color.icon.brand')} />
                   <Box xcss={styles.grow}>
-                    {a.url ? (
-                      <Link href={a.url} target="_blank">
+                    {safeLinkUrl(a.url) ? (
+                      <Link href={safeLinkUrl(a.url)!} target="_blank">
                         {a.name}
                       </Link>
                     ) : (
@@ -144,7 +145,9 @@ function AttachmentMenu({ name, onRemove }: { name: string; onRemove: () => void
   return (
     <DropdownMenu
       placement="bottom-end"
-      trigger={({ triggerRef, ...props }) => <IconButton {...props} ref={triggerRef} spacing="compact" icon={ShowMoreHorizontalIcon} label={`Actions for ${name}`} />}
+      trigger={({ triggerRef, ...props }) => (
+        <IconButton {...props} ref={triggerRef} spacing="compact" icon={ShowMoreHorizontalIcon} label={`Actions for ${name}`} />
+      )}
     >
       <DropdownItemGroup>
         <DropdownItem onClick={onRemove}>Remove</DropdownItem>

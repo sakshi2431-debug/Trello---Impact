@@ -11,7 +11,7 @@ export const workspace: Workspace = {
 export const CURRENT_USER_ID = 'm-maya'
 
 export const members: Member[] = [
-  { id: 'm-maya', fullName: 'Maya Chen', username: 'mayachen', email: 'maya.chen@lumen.example', role: 'Product Designer' },
+  { id: 'm-maya', fullName: 'Alex Chen', username: 'alexchen', email: 'alex.chen@lumen.example', role: 'Project Lead' },
   { id: 'm-jordan', fullName: 'Jordan Alvarez', username: 'jordanalvarez', email: 'jordan.alvarez@lumen.example', role: 'Engineering Manager' },
   { id: 'm-priya', fullName: 'Priya Natarajan', username: 'priyan', email: 'priya.natarajan@lumen.example', role: 'Product Manager' },
   { id: 'm-sam', fullName: 'Sam Okafor', username: 'samokafor', email: 'sam.okafor@lumen.example', role: 'Frontend Engineer' },

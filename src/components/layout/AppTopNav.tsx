@@ -4,7 +4,6 @@ import DropdownMenu, { DropdownItem, DropdownItemGroup } from '@atlaskit/dropdow
 import Heading from '@atlaskit/heading'
 import MegaphoneIcon from '@atlaskit/icon/core/megaphone'
 import QuestionCircleIcon from '@atlaskit/icon/core/question-circle'
-import Link from '@atlaskit/link'
 import { TrelloIcon } from '@atlaskit/logo/trello-icon'
 import { ButtonItem, MenuGroup, Section } from '@atlaskit/menu'
 import { TopNav, TopNavEnd, TopNavMiddle, TopNavStart } from '@atlaskit/navigation-system/layout/top-nav'
@@ -116,11 +115,6 @@ function CreateMenu() {
 
 const updates = [
   {
-    title: 'Trello Impact (prototype)',
-    body: 'When you add or reschedule a card, see which other cards the change might disrupt before anything is updated.',
-    link: { label: 'Open AI settings', href: paths.settings('ai') },
-  },
-  {
     title: 'Inbox, Planner and Board together',
     body: 'Use the bar at the bottom of a board to show Inbox and Planner beside it. Drag a card onto a Planner day to schedule it.',
   },
@@ -149,11 +143,6 @@ function WhatsNew() {
               <Stack key={u.title} space="space.050">
                 <Text weight="semibold">{u.title}</Text>
                 <Text color="color.text.subtle">{u.body}</Text>
-                {u.link && (
-                  <Link href={u.link.href} onClick={() => setOpen(false)}>
-                    {u.link.label}
-                  </Link>
-                )}
               </Stack>
             ))}
           </Stack>

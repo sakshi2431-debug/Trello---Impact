@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Button from '@atlaskit/button/new'
 import Comment, { CommentAction, CommentAuthor, CommentEdited, CommentTime } from '@atlaskit/comment'
 import { cssMap } from '@atlaskit/css'
+import AiSparkleIcon from '@atlaskit/icon/core/ai-sparkle'
 import CommentIcon from '@atlaskit/icon/core/comment'
 import { Box } from '@atlaskit/primitives/compiled/box'
 import { Inline } from '@atlaskit/primitives/compiled/inline'
@@ -28,6 +29,8 @@ export function CardActivity({ card }: { card: Card }) {
   const [showDetails, setShowDetails] = useState(true)
   const [draft, setDraft] = useState('')
   const [isComposing, setComposing] = useState(false)
+  // Remounting the textarea returns it to one row after Save or Cancel.
+  const [composerKey, setComposerKey] = useState(0)
 
   const entries: Entry[] = [
     ...card.comments.map((comment) => ({ kind: 'comment' as const, at: comment.createdAt, comment })),
@@ -39,6 +42,16 @@ export function CardActivity({ card }: { card: Card }) {
     dispatch({ type: 'card/addComment', cardId: card.id, text: draft.trim() })
     setDraft('')
     setComposing(false)
+    setComposerKey((k) => k + 1)
+  }
+
+  if (card.isDraft) {
+    return (
+      <Stack space="space.200">
+        <SectionHeading icon={CommentIcon} title="Comments and activity" />
+        <Text color="color.text.subtle">Comments will appear after this card is created.</Text>
+      </Stack>
+    )
   }
 
   return (
@@ -54,6 +67,7 @@ export function CardActivity({ card }: { card: Card }) {
       />
       <Stack space="space.100">
         <Textarea
+          key={composerKey}
           aria-label="Write a comment"
           placeholder="Write a comment…"
           minimumRows={isComposing ? 3 : 1}
@@ -74,6 +88,7 @@ export function CardActivity({ card }: { card: Card }) {
               onClick={() => {
                 setDraft('')
                 setComposing(false)
+                setComposerKey((k) => k + 1)
               }}
             >
               Cancel
@@ -137,9 +152,12 @@ function CommentEntry({ card, comment }: { card: Card; comment: CardComment }) {
             </Inline>
           </Stack>
         ) : (
-          <Box xcss={styles.text}>
-            <Text>{comment.text}</Text>
-          </Box>
+          <Stack space="space.100">
+            <Box xcss={styles.text}>
+              <Text>{comment.text}</Text>
+            </Box>
+            {comment.impact && <ImpactQuestionAnswer card={card} comment={comment} />}
+          </Stack>
         )
       }
       actions={
@@ -155,6 +173,43 @@ function CommentEntry({ card, comment }: { card: Card; comment: CardComment }) {
           : undefined
       }
     />
+  )
+}
+
+/**
+ * The owner's side of an Impact question (spec OWNER SIDE): a marker and two responses.
+ * Link cards attaches the review's card, which is the only thing that confirms the connection.
+ */
+function ImpactQuestionAnswer({ card, comment }: { card: Card; comment: CardComment }) {
+  const { cards, currentUserId } = useAppState()
+  const dispatch = useDispatch()
+  const question = comment.impact!
+  const isOwner = card.memberIds[0] === currentUserId
+  const reviewCard = cards[question.reviewCardId]
+  const asker = membersById[comment.authorId]?.fullName.split(' ')[0] ?? 'the asker'
+  const answer = (response: 'linked' | 'not-related') => dispatch({ type: 'comment/answerImpact', cardId: card.id, commentId: comment.id, response })
+  return (
+    <Stack space="space.100">
+      <Inline space="space.050" alignBlock="center">
+        <AiSparkleIcon label="" size="small" color={token('color.icon.subtle')} />
+        <Text size="small" color="color.text.subtle">
+          Asked through an Impact review
+        </Text>
+      </Inline>
+      {question.response === 'linked' && <Text size="small">{`Linked ${reviewCard?.title ?? 'the card'} to this card.`}</Text>}
+      {question.response === 'not-related' && <Text size="small">Marked not related.</Text>}
+      {!question.response && reviewCard && isOwner && (
+        <>
+          <Inline space="space.100">
+            <Button appearance="primary" onClick={() => answer('linked')}>
+              Link cards
+            </Button>
+            <Button onClick={() => answer('not-related')}>Not related</Button>
+          </Inline>
+          <Text size="small" color="color.text.subtle">{`Linking attaches ${reviewCard.title} to this card and tells ${asker}. You can remove the link later.`}</Text>
+        </>
+      )}
+    </Stack>
   )
 }
 

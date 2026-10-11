@@ -28,6 +28,17 @@ export function estimateTiming(assumptions: TimingAssumptions) {
   return { result: toIsoDate(date), steps }
 }
 
+/** The date `days` working days (or calendar days) before `iso`. */
+export function subtractDays(iso: string, days: number, countWeekends: boolean) {
+  let date = parseIsoDate(iso)
+  let counted = 0
+  while (counted < days) {
+    date = addDays(date, -1)
+    if (countWeekends || (date.getDay() !== 0 && date.getDay() !== 6)) counted += 1
+  }
+  return toIsoDate(date)
+}
+
 /** Calendar days from `from` to `to`; positive when `to` is later. */
 export function daysBetween(from: string, to: string) {
   return Math.round((parseIsoDate(to).getTime() - parseIsoDate(from).getTime()) / 86_400_000)
@@ -65,9 +76,6 @@ export function formatCountedDays(steps: TimingStep[]) {
     .join(', ')
 }
 
-export function formatLongDate(iso: string) {
-  return parseIsoDate(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-}
 
 export function formatDate(iso: string) {
   return parseIsoDate(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })

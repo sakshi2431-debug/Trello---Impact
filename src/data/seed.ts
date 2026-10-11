@@ -6,7 +6,7 @@ import { attachmentNames, checklistTemplates, comments, descriptions } from './c
 import { CURRENT_USER_ID, workspace } from './members'
 import { createWebsiteLaunchBoard, WEBSITE_BOARD_ID } from './websiteLaunch'
 
-export const STATE_VERSION = 6
+export const STATE_VERSION = 10
 
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
@@ -249,11 +249,9 @@ export function createSeedState(): AppState {
     inboxListId: INBOX_LIST_ID,
     preferences: {
       showLabelText: false,
-      isImpactEnabled: true,
-      impactSimulation: 'success',
       panels: { inbox: true, planner: false, board: true },
       isTemplatesPromoDismissed: false,
-      bio: 'Product designer on the Lumen web app. Ask me about onboarding and design systems.',
+      bio: 'Project lead for the Lumen marketing site.',
     },
     boardOrder: [WEBSITE_BOARD_ID, ...boardSeeds.map((b) => b.id)],
     boards,

@@ -6,6 +6,7 @@ import DropdownMenu, { DropdownItem, DropdownItemGroup } from '@atlaskit/dropdow
 import { useFlags } from '@atlaskit/flag'
 import Heading from '@atlaskit/heading'
 import AddIcon from '@atlaskit/icon/core/add'
+import AiSparkleIcon from '@atlaskit/icon/core/ai-sparkle'
 import AlignTextLeftIcon from '@atlaskit/icon/core/align-text-left'
 import ArchiveBoxIcon from '@atlaskit/icon/core/archive-box'
 import AttachmentIcon from '@atlaskit/icon/core/attachment'
@@ -27,7 +28,7 @@ import type { NewCoreIconProps } from '@atlaskit/icon/types'
 import InlineEdit from '@atlaskit/inline-edit'
 import Lozenge from '@atlaskit/lozenge'
 import { ButtonItem, MenuGroup, Section } from '@atlaskit/menu'
-import Modal, { CloseButton } from '@atlaskit/modal-dialog'
+import Modal, { CloseButton, ModalBody, ModalFooter, ModalHeader, ModalTitle, ModalTransition } from '@atlaskit/modal-dialog'
 import { Box } from '@atlaskit/primitives/compiled/box'
 import { Inline } from '@atlaskit/primitives/compiled/inline'
 import { Pressable } from '@atlaskit/primitives/compiled/pressable'
@@ -155,39 +156,103 @@ const styles = cssMap({
 
 const pillColors = cssMap({
   neutral: { backgroundColor: token('color.background.neutral'), '&:hover': { backgroundColor: token('color.background.neutral.hovered') } },
-  green: { backgroundColor: token('color.background.accent.green.subtler'), '&:hover': { backgroundColor: token('color.background.accent.green.subtler.hovered') } },
-  yellow: { backgroundColor: token('color.background.accent.yellow.subtler'), '&:hover': { backgroundColor: token('color.background.accent.yellow.subtler.hovered') } },
-  orange: { backgroundColor: token('color.background.accent.orange.subtler'), '&:hover': { backgroundColor: token('color.background.accent.orange.subtler.hovered') } },
+  green: {
+    backgroundColor: token('color.background.accent.green.subtler'),
+    '&:hover': { backgroundColor: token('color.background.accent.green.subtler.hovered') },
+  },
+  yellow: {
+    backgroundColor: token('color.background.accent.yellow.subtler'),
+    '&:hover': { backgroundColor: token('color.background.accent.yellow.subtler.hovered') },
+  },
+  orange: {
+    backgroundColor: token('color.background.accent.orange.subtler'),
+    '&:hover': { backgroundColor: token('color.background.accent.orange.subtler.hovered') },
+  },
   red: { backgroundColor: token('color.background.accent.red.subtler'), '&:hover': { backgroundColor: token('color.background.accent.red.subtler.hovered') } },
-  purple: { backgroundColor: token('color.background.accent.purple.subtler'), '&:hover': { backgroundColor: token('color.background.accent.purple.subtler.hovered') } },
-  blue: { backgroundColor: token('color.background.accent.blue.subtler'), '&:hover': { backgroundColor: token('color.background.accent.blue.subtler.hovered') } },
-  teal: { backgroundColor: token('color.background.accent.teal.subtler'), '&:hover': { backgroundColor: token('color.background.accent.teal.subtler.hovered') } },
-  lime: { backgroundColor: token('color.background.accent.lime.subtler'), '&:hover': { backgroundColor: token('color.background.accent.lime.subtler.hovered') } },
-  magenta: { backgroundColor: token('color.background.accent.magenta.subtler'), '&:hover': { backgroundColor: token('color.background.accent.magenta.subtler.hovered') } },
+  purple: {
+    backgroundColor: token('color.background.accent.purple.subtler'),
+    '&:hover': { backgroundColor: token('color.background.accent.purple.subtler.hovered') },
+  },
+  blue: {
+    backgroundColor: token('color.background.accent.blue.subtler'),
+    '&:hover': { backgroundColor: token('color.background.accent.blue.subtler.hovered') },
+  },
+  teal: {
+    backgroundColor: token('color.background.accent.teal.subtler'),
+    '&:hover': { backgroundColor: token('color.background.accent.teal.subtler.hovered') },
+  },
+  lime: {
+    backgroundColor: token('color.background.accent.lime.subtler'),
+    '&:hover': { backgroundColor: token('color.background.accent.lime.subtler.hovered') },
+  },
+  magenta: {
+    backgroundColor: token('color.background.accent.magenta.subtler'),
+    '&:hover': { backgroundColor: token('color.background.accent.magenta.subtler.hovered') },
+  },
 })
 
 export function CardModal({ cardId, onClose }: { cardId: string; onClose: () => void }) {
   const { cards, boards, lists } = useAppState()
   const impact = useImpact()
+  const [isClosePromptOpen, setClosePromptOpen] = useState(false)
   const card = cards[cardId]
   const board = card ? boards[card.boardId] : undefined
   if (!card || !board) return null
   const session = impact.session
   const close = () => {
     // A source card opened from "Why?" returns to the review instead of leaving it behind.
-    if (session?.sourceCardId === card.id && session.cardId !== card.id) {
-      impact.setSourceCard(undefined)
-      navigate(paths.card(session.cardId))
+    if (session?.source?.cardId === card.id && session.cardId !== card.id) {
+      impact.setSource(undefined)
+      navigate(paths.card(session.cardId, card.boardId))
       return
     }
-    // Closing an unapproved draft discards it; nothing was written to the board.
-    if (card.isDraft) impact.discardDraft()
+    // Leaving a review never loses the draft (spec rule 8): ask first. A draft with no review is simply kept.
+    const isPendingDate =
+      (session?.kind === 'date' || session?.kind === 'description') && session.cardId === card.id && ['draft', 'checking', 'review'].includes(session.phase)
+    if ((card.isDraft && session?.cardId === card.id && session.review) || isPendingDate) {
+      setClosePromptOpen(true)
+      return
+    }
     onClose()
   }
   return (
-    <Modal onClose={close} width="x-large" label={card.title}>
-      <CardDetails card={card} board={board} list={lists[card.listId]} onClose={close} />
-    </Modal>
+    <>
+      <Modal onClose={close} width="x-large" label={card.title}>
+        <CardDetails card={card} board={board} list={lists[card.listId]} onClose={close} />
+      </Modal>
+      <ModalTransition>
+        {isClosePromptOpen && (
+          <Modal onClose={() => setClosePromptOpen(false)} width="small" label="Close review?">
+            <ModalHeader hasCloseButton>
+              <ModalTitle>Close review?</ModalTitle>
+            </ModalHeader>
+            <ModalBody>
+              <Text as="p">
+                {session?.kind === 'date'
+                  ? 'Your proposed date and this review are kept for this session. To pick them up again, open Dates on this card.'
+                  : session?.kind === 'description'
+                    ? 'Your edit and this review are kept for this session. The card shows Unsaved changes, and the editor reopens with your text.'
+                    : `Your draft and this review are kept for this session. To pick them up again, choose Add a card in ${lists[card.listId]?.title ?? 'the list'}.`}
+              </Text>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                appearance="subtle"
+                onClick={() => {
+                  setClosePromptOpen(false)
+                  onClose()
+                }}
+              >
+                Keep draft and close
+              </Button>
+              <Button appearance="primary" autoFocus onClick={() => setClosePromptOpen(false)}>
+                Return to review
+              </Button>
+            </ModalFooter>
+          </Modal>
+        )}
+      </ModalTransition>
+    </>
   )
 }
 
@@ -217,26 +282,50 @@ function CardDetails({ card, board, list, onClose }: { card: Card; board: Board;
   const impact = useImpact()
   const hasImpact = impact.session?.cardId === card.id
   const isDraft = !!card.isDraft
-  const isViewingSource = !!impact.session && impact.session.sourceCardId === card.id && !hasImpact
-  // The side panel shows one of the tab bar's panels; Impact opens first when this card has a review.
-  const [sidePanel, setSidePanel] = useState<'comments' | 'impact' | null>(hasImpact ? 'impact' : 'comments')
-  const togglePanel = (panel: 'comments' | 'impact') => setSidePanel((current) => (current === panel ? null : panel))
-  // A review started from this card (e.g. a date change) brings the Impact panel forward.
-  const [hadImpact, setHadImpact] = useState(hasImpact)
-  if (hadImpact !== hasImpact) {
-    setHadImpact(hasImpact)
-    if (hasImpact) setSidePanel('impact')
-    // A finished review closes; Comments and activity take its place.
-    else setSidePanel((current) => (current === 'impact' ? 'comments' : current))
+  const isViewingSource = !!impact.session && impact.session.source?.cardId === card.id && !hasImpact
+  // Which Impact state this card shows: its own review's phase, or the source view.
+  const impactState = isViewingSource ? 'source' : hasImpact ? impact.session!.phase : undefined
+  const showsImpact = impactState !== undefined && impactState !== 'draft' && impactState !== 'done'
+  // The side panel shows one of the tab bar's panels. A running review brings Impact forward; the draft shows Comments.
+  const [sidePanel, setSidePanel] = useState<'comments' | 'impact' | null>(showsImpact || impact.impactTabRequest === card.id ? 'impact' : 'comments')
+  // Review impact on the early-finish flag opens this card on the Impact tab, even if it's already open.
+  const { impactTabRequest, clearImpactTabRequest } = impact
+  const [handledRequest, setHandledRequest] = useState<string | null>(null)
+  if (impactTabRequest !== handledRequest) {
+    setHandledRequest(impactTabRequest)
+    if (impactTabRequest === card.id) setSidePanel('impact')
   }
-  // "Back to edit" in a date review reopens Dates with the proposed dates.
-  const isEditingDate = hasImpact && impact.session?.kind === 'date' && impact.session.phase === 'draft'
-  const [wasEditingDate, setWasEditingDate] = useState(isEditingDate)
+  useEffect(() => {
+    if (impactTabRequest === card.id) clearImpactTabRequest()
+  }, [impactTabRequest, card.id, clearImpactTabRequest])
+  const [lastImpactState, setLastImpactState] = useState(impactState)
+  if (lastImpactState !== impactState) {
+    setLastImpactState(impactState)
+    if (showsImpact) setSidePanel('impact')
+    else if (impactState === 'draft' || impactState === undefined) setSidePanel((current) => (current === 'impact' ? 'comments' : current))
+  }
+  // A date review in draft (Back to edit, Stop checking) reopens Dates with the proposed dates.
+  const isEditingDate = hasImpact && impact.session!.kind === 'date' && impactState === 'draft'
+  const isUnsavedDate = hasImpact && impact.session!.kind === 'date' && ['draft', 'checking', 'review'].includes(impactState ?? '')
   const [isDatesOpen, setDatesOpen] = useState(false)
+  const [wasEditingDate, setWasEditingDate] = useState(isEditingDate)
   if (wasEditingDate !== isEditingDate) {
     setWasEditingDate(isEditingDate)
-    // Reviewing again from the panel closes Dates; the review takes over.
     setDatesOpen(isEditingDate)
+  }
+  const onDatesOpenChange = (open: boolean) => {
+    setDatesOpen(open)
+    // Closing Dates while editing a date review is Trello's cancel: the unsaved date is discarded.
+    if (!open && impact.session?.cardId === card.id && impact.session.kind === 'date' && impact.session.phase === 'draft') impact.cancelDraft()
+  }
+  const togglePanel = (panel: 'comments' | 'impact') => {
+    // The Impact tab reopens a review kept with the draft.
+    if (panel === 'impact' && impactState === 'draft' && impact.session?.review) {
+      impact.reopenReview()
+      setSidePanel('impact')
+      return
+    }
+    setSidePanel((current) => (current === panel ? null : panel))
   }
   const [isTitleHidden, setTitleHidden] = useState(false)
   // A shortcut button hides once its field has a value, but not while its popover is still open.
@@ -293,12 +382,7 @@ function CardDetails({ card, board, list, onClose }: { card: Card; board: Board;
         <CardPopover
           title="Move card"
           trigger={({ triggerProps, isOpen, toggle }) => (
-            <Pressable
-              {...triggerProps}
-              xcss={cx(styles.listPill, pillColors[list?.color ?? 'neutral'])}
-              aria-expanded={isOpen}
-              onClick={toggle}
-            >
+            <Pressable {...triggerProps} xcss={cx(styles.listPill, pillColors[list?.color ?? 'neutral'])} aria-expanded={isOpen} onClick={toggle}>
               {list?.title ?? 'Inbox'}
               <ChevronDownIcon label="" size="small" />
             </Pressable>
@@ -326,13 +410,10 @@ function CardDetails({ card, board, list, onClose }: { card: Card; board: Board;
           />
           <DropdownMenu
             placement="bottom-end"
-            trigger={({ triggerRef, ...props }) => <IconButton {...props} ref={triggerRef} appearance="subtle" icon={ShowMoreHorizontalIcon} label="Card actions" />}
+            trigger={({ triggerRef, ...props }) => (
+              <IconButton {...props} ref={triggerRef} appearance="subtle" icon={ShowMoreHorizontalIcon} label="Card actions" isDisabled={isDraft} />
+            )}
           >
-            {isDraft ? (
-              <DropdownItemGroup>
-                <DropdownItem onClick={onClose}>Discard draft</DropdownItem>
-              </DropdownItemGroup>
-            ) : (
             <DropdownItemGroup>
               <DropdownItem onClick={() => dispatch({ type: 'card/toggleWatch', cardId: card.id })}>{card.isWatching ? 'Stop watching' : 'Watch'}</DropdownItem>
               {card.isArchived ? (
@@ -346,27 +427,10 @@ function CardDetails({ card, board, list, onClose }: { card: Card; board: Board;
                 </DropdownItem>
               )}
             </DropdownItemGroup>
-            )}
           </DropdownMenu>
           <CloseButton onClick={onClose} label="Close card" />
         </Inline>
       </Box>
-
-      {isViewingSource && (
-        <Box xcss={styles.archived}>
-          <SectionMessage
-            appearance="information"
-            title="Source for an Impact suggestion"
-            actions={[
-              <SectionMessageAction key="back" onClick={onClose}>
-                Back to review
-              </SectionMessageAction>,
-            ]}
-          >
-            <Text as="p">Read the source, then go back. Your review is kept.</Text>
-          </SectionMessage>
-        </Box>
-      )}
 
       {card.isArchived && (
         <Box xcss={styles.archived}>
@@ -413,7 +477,9 @@ function CardDetails({ card, board, list, onClose }: { card: Card; board: Board;
                       hideActionButtons
                       readViewFitContainerWidth
                       onConfirm={(value: string) => value.trim() && dispatch({ type: 'card/update', cardId: card.id, patch: { title: value.trim() } })}
-                      editView={({ errorMessage: _errorMessage, ...fieldProps }, ref) => <Textfield {...fieldProps} ref={ref} autoFocus aria-label="Card title" />}
+                      editView={({ errorMessage: _errorMessage, ...fieldProps }, ref) => (
+                        <Textfield {...fieldProps} ref={ref} autoFocus aria-label="Card title" />
+                      )}
                       readView={() => (
                         <Box xcss={styles.titleRead}>
                           <Heading size="large" as="h2">
@@ -440,10 +506,20 @@ function CardDetails({ card, board, list, onClose }: { card: Card; board: Board;
                         </CardPopover>
                       )}
                       {((!card.dueDate && !card.startDate) || openShortcut === 'dates') && (
-                        <CardPopover title="Dates" onOpenChange={trackShortcut('dates')} trigger={triggerButton('Dates', ClockIcon)}>
+                        <CardPopover
+                          title="Dates"
+                          placement="right-start"
+                          isOpen={card.dueDate || card.startDate ? undefined : isDatesOpen}
+                          onOpenChange={(open) => {
+                            trackShortcut('dates')(open)
+                            onDatesOpenChange(open)
+                          }}
+                          trigger={triggerButton('Dates', ClockIcon)}
+                        >
                           {(close) => <DatesPicker card={card} onDone={close} />}
                         </CardPopover>
                       )}
+                      {isUnsavedDate && !card.dueDate && !card.startDate && <Lozenge appearance="warning">Unsaved changes</Lozenge>}
                       <CardPopover title="Add checklist" trigger={triggerButton('Checklist', ListChecklistIcon)}>
                         {(close) => <ChecklistCreator card={card} onDone={close} />}
                       </CardPopover>
@@ -498,21 +574,23 @@ function CardDetails({ card, board, list, onClose }: { card: Card; board: Board;
                                 // Opening to the side lets the tall Dates popover shift up to fit, as in Trello.
                                 placement="right-start"
                                 isOpen={isDatesOpen}
-                                onOpenChange={setDatesOpen}
+                                onOpenChange={onDatesOpenChange}
                                 trigger={({ triggerProps, isOpen, toggle }) => (
                                   <Button {...triggerProps} iconAfter={ChevronDownIcon} isSelected={isOpen} onClick={toggle}>
                                     <Inline space="space.100" alignBlock="center" as="span">
                                       {formatDateRange(card)}
                                       {card.recurring && card.recurring !== 'never' && <RefreshIcon label="Recurring" size="small" />}
                                       {status === 'complete' && <Lozenge appearance="success">Complete</Lozenge>}
-                                      {status === 'overdue' && <Lozenge appearance="removed">Overdue</Lozenge>}
-                                      {status === 'due-soon' && <Lozenge appearance="moved">Due soon</Lozenge>}
+                                      {status === 'overdue' && <Lozenge appearance="danger">Overdue</Lozenge>}
+                                      {status === 'due-soon' && <Lozenge appearance="warning">Due soon</Lozenge>}
                                     </Inline>
                                   </Button>
                                 )}
                               >
                                 {(close) => <DatesPicker card={card} onDone={close} />}
                               </CardPopover>
+                              {/* Trello's unsaved-changes marker while a date review is kept but not applied (spec rule 8). */}
+                              {isUnsavedDate && <Lozenge appearance="warning">Unsaved changes</Lozenge>}
                             </Inline>
                           </MetaBlock>
                         )}
@@ -522,6 +600,29 @@ function CardDetails({ card, board, list, onClose }: { card: Card; board: Board;
                 </Box>
 
                 <Description card={card} />
+
+                {/* S1/01: the draft keeps Trello's Add card and Cancel; Impact only adds Review impact beside them (spec rule 1). */}
+                {isDraft && impactState === 'draft' && (
+                  <Box xcss={styles.indent}>
+                    <Inline space="space.100" alignBlock="center">
+                      <Button appearance="primary" onClick={impact.addCard}>
+                        Add card
+                      </Button>
+                      <Button iconBefore={AiSparkleIcon} onClick={impact.review}>
+                        Review impact
+                      </Button>
+                      <Button
+                        appearance="subtle"
+                        onClick={() => {
+                          impact.cancelDraft()
+                          navigate(paths.board(board.id))
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </Inline>
+                  </Box>
+                )}
 
                 <CardAttachments
                   card={card}
@@ -545,15 +646,13 @@ function CardDetails({ card, board, list, onClose }: { card: Card; board: Board;
             </Box>
           </Box>
 
-          {sidePanel && (
-            <Box xcss={styles.aside}>{sidePanel === 'impact' && hasImpact ? <ImpactPanel card={card} /> : <CardActivity card={card} />}</Box>
-          )}
+          {sidePanel && <Box xcss={styles.aside}>{sidePanel === 'impact' ? <ImpactPanel card={card} /> : <CardActivity card={card} />}</Box>}
         </Box>
       </Box>
       <CardTabBar
         isCommentsOpen={sidePanel === 'comments'}
         onToggleComments={() => togglePanel('comments')}
-        impact={hasImpact ? { isOpen: sidePanel === 'impact', onToggle: () => togglePanel('impact') } : undefined}
+        impact={{ isOpen: sidePanel === 'impact', onToggle: () => togglePanel('impact') }}
       />
     </>
   )
@@ -683,12 +782,33 @@ function MetaBlock({ label, children }: { label: string; children: React.ReactNo
 
 function Description({ card }: { card: Card }) {
   const dispatch = useDispatch()
+  const impact = useImpact()
   const [isEditing, setEditing] = useState(false)
   const [draft, setDraft] = useState(card.description)
+  // A description review that hasn't been applied keeps the edited text, so the editor stays open with it (spec rule 8).
+  const session = impact.session?.cardId === card.id && impact.session.kind === 'description' ? impact.session : undefined
+  const pending = session && ['draft', 'checking', 'review'].includes(session.phase) ? session : undefined
+  const isOpen = isEditing || !!pending
+  const text = pending ? pending.descriptionChange!.to : draft
+  const isReviewing = !!pending && pending.phase !== 'draft'
+  const isChanged = text.trim() !== card.description.trim()
 
   const startEditing = () => {
     setDraft(card.description)
     setEditing(true)
+  }
+  const setText = (value: string) => (pending ? impact.setDraftDescription(value) : setDraft(value))
+  const close = () => {
+    if (pending) impact.cancelDraft()
+    setEditing(false)
+  }
+  const save = () => {
+    dispatch({ type: 'card/update', cardId: card.id, patch: { description: text.trim() } })
+    close()
+  }
+  const reviewImpact = () => {
+    impact.startDescriptionEdit(card.id, text.trim())
+    setEditing(false)
   }
 
   return (
@@ -697,7 +817,7 @@ function Description({ card }: { card: Card }) {
         icon={AlignTextLeftIcon}
         title="Description"
         actions={
-          card.description && !isEditing ? (
+          card.description && !isOpen ? (
             <Button spacing="compact" onClick={startEditing}>
               Edit
             </Button>
@@ -705,23 +825,37 @@ function Description({ card }: { card: Card }) {
         }
       />
       <Box xcss={styles.indent}>
-        {isEditing ? (
+        {isOpen ? (
           <Stack space="space.100">
-            <Textarea autoFocus aria-label="Description" minimumRows={5} value={draft} onChange={(e) => setDraft(e.currentTarget.value)} />
-            <Inline space="space.050">
-              <Button
-                appearance="primary"
-                onClick={() => {
-                  dispatch({ type: 'card/update', cardId: card.id, patch: { description: draft.trim() } })
-                  setEditing(false)
-                }}
-              >
-                Save
-              </Button>
-              <Button appearance="subtle" onClick={() => setEditing(false)}>
-                Cancel
-              </Button>
-            </Inline>
+            <Textarea
+              autoFocus={!isReviewing}
+              isReadOnly={isReviewing}
+              aria-label="Description"
+              minimumRows={5}
+              value={text}
+              onChange={(e) => setText(e.currentTarget.value)}
+            />
+            {!isReviewing && (
+              <Inline space="space.050">
+                <Button appearance="primary" onClick={save}>
+                  Save
+                </Button>
+                {/* Impact only adds Review impact beside Trello's Save and Cancel (spec rule 1). */}
+                {!card.isDraft && isChanged && (
+                  <Button iconBefore={AiSparkleIcon} onClick={reviewImpact}>
+                    Review impact
+                  </Button>
+                )}
+                <Button appearance="subtle" onClick={close}>
+                  Cancel
+                </Button>
+              </Inline>
+            )}
+            {isChanged && (
+              <Box>
+                <Lozenge appearance="warning">Unsaved changes</Lozenge>
+              </Box>
+            )}
           </Stack>
         ) : card.description ? (
           <Box xcss={styles.description}>

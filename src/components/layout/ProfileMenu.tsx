@@ -33,7 +33,6 @@ export function ProfileMenu() {
           <DropdownItem href={paths.settings('activity')}>Activity</DropdownItem>
           <DropdownItem href={paths.settings('cards')}>Cards</DropdownItem>
           <DropdownItem href={paths.settings('preferences')}>Settings</DropdownItem>
-          <DropdownItem href={paths.settings('ai')}>AI settings</DropdownItem>
         </DropdownItemGroup>
         <DropdownItemGroup hasSeparator>
           <DropdownItem onClick={() => setResetOpen(true)}>Reset demo data</DropdownItem>

@@ -11,7 +11,7 @@ import { DashboardPage } from './components/dashboard/DashboardPage'
 import { HomePage } from './components/home/HomePage'
 import { HomeSideNav, SettingsSideNav } from './components/layout/AppSideNav'
 import { AppTopNav } from './components/layout/AppTopNav'
-import { ActivitySettings, AiSettings, CardsSettings, ExportSettings, PreferenceSettings, ProfileSettings } from './components/settings/SettingsPages'
+import { ActivitySettings, CardsSettings, ExportSettings, PreferenceSettings, ProfileSettings } from './components/settings/SettingsPages'
 import { TemplatesPage } from './components/templates/TemplatesPage'
 import { MembersPage } from './components/workspace/MembersPage'
 import { SettingsPage as WorkspaceSettingsPage } from './components/workspace/SettingsPage'
@@ -76,7 +76,6 @@ const settingsPages: Record<SettingsSection, () => JSX.Element> = {
   activity: ActivitySettings,
   cards: CardsSettings,
   preferences: PreferenceSettings,
-  ai: AiSettings,
   members: MembersPage,
   workspace: WorkspaceSettingsPage,
   export: ExportSettings,

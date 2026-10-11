@@ -7,7 +7,6 @@ import HomeIcon from '@atlaskit/icon/core/home'
 import PeopleGroupIcon from '@atlaskit/icon/core/people-group'
 import PersonAvatarIcon from '@atlaskit/icon/core/person-avatar'
 import SettingsIcon from '@atlaskit/icon/core/settings'
-import AiIcon from '@atlaskit/icon/core/ai-sparkle'
 import TemplateIcon from '@atlaskit/icon/core/screen-plus'
 import { SideNav, SideNavBody } from '@atlaskit/navigation-system/layout/side-nav'
 import { Box } from '@atlaskit/primitives/compiled/box'
@@ -79,7 +78,6 @@ const personal: { section: SettingsSection; label: string; icon: typeof BoardsIc
   { section: 'activity', label: 'Activity', icon: ActivityIcon },
   { section: 'cards', label: 'Cards', icon: CardIcon },
   { section: 'preferences', label: 'Settings', icon: SettingsIcon },
-  { section: 'ai', label: 'AI settings', icon: AiIcon },
 ]
 
 const workspaceItems: { section: SettingsSection; label: string; icon: typeof BoardsIcon }[] = [

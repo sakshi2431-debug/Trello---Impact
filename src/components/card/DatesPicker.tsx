@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import Button from '@atlaskit/button/new'
+import AiSparkleIcon from '@atlaskit/icon/core/ai-sparkle'
 import Calendar from '@atlaskit/calendar'
 import { Checkbox } from '@atlaskit/checkbox'
 import { cssMap, cx } from '@atlaskit/css'
 import { Label } from '@atlaskit/form'
-import AiSparkleIcon from '@atlaskit/icon/core/ai-sparkle'
 import { Box } from '@atlaskit/primitives/compiled/box'
-import { Inline } from '@atlaskit/primitives/compiled/inline'
 import { Pressable } from '@atlaskit/primitives/compiled/pressable'
 import { Stack } from '@atlaskit/primitives/compiled/stack'
 import { Text } from '@atlaskit/primitives/compiled/text'
@@ -14,12 +13,14 @@ import Select from '@atlaskit/select'
 import Textfield from '@atlaskit/textfield'
 import { token } from '@atlaskit/tokens'
 import VisuallyHidden from '@atlaskit/visually-hidden'
-import { useImpact } from '../../impact/ImpactProvider'
 import { addDays, formatTime, fromFieldDate, parseIsoDate, toFieldDate, toIsoDate, todayIso } from '../../lib/dates'
-import { useAppState, useDispatch } from '../../state/store'
+import { useImpact } from '../../impact/ImpactProvider'
+import { useDispatch } from '../../state/store'
 import type { Card, CardDates, Recurrence, Reminder } from '../../types'
 
 const styles = cssMap({
+  actions: { display: 'flex', gap: token('space.100') },
+  action: { flexGrow: 1, flexBasis: 0 },
   calendar: { display: 'flex', justifyContent: 'center' },
   fieldRow: { display: 'flex', alignItems: 'center', gap: token('space.100') },
   dateField: { width: '7.5rem' },
@@ -129,11 +130,10 @@ function DateField({ id, label, value, isDisabled, onFocus, onChange }: { id: st
 /** Trello's Dates popover: start and due dates, due time, recurrence and reminder, saved together. */
 export function DatesPicker({ card, onDone }: { card: Card; onDone: () => void }) {
   const dispatch = useDispatch()
-  const { preferences } = useAppState()
-  const { session, startDateChange, discardDraft } = useImpact()
-  // Back to edit reopens Dates with the proposed, unsaved dates of the review.
-  const pending = session?.kind === 'date' && session.cardId === card.id && session.phase === 'draft' ? session.dateChange?.dates : undefined
-  const from: CardDates = pending ?? card
+  const { session, startDateChange, reopenReview, cancelDraft } = useImpact()
+  // A date review kept with "Keep draft and close" (or after Back to edit) reopens Dates with its proposed dates.
+  const pending = session?.kind === 'date' && session.cardId === card.id && ['draft', 'checking', 'review'].includes(session.phase) ? session.dateChange : undefined
+  const from: CardDates = pending?.dates ?? card
   const [hasStart, setHasStart] = useState(!!from.startDate)
   const [startDate, setStartDate] = useState(from.startDate)
   const [hasDue, setHasDue] = useState(from.dueDate !== undefined || !from.startDate)
@@ -155,15 +155,20 @@ export function DatesPicker({ card, onDone }: { card: Card; onDone: () => void }
   }
   const highlighted =
     dates.startDate && dates.dueDate && dates.startDate <= dates.dueDate ? datesBetween(dates.startDate, dates.dueDate) : [dates.startDate, dates.dueDate].filter((d): d is string => !!d)
-  // Saving directly is the ordinary Trello path; it ends any unfinished review of this date.
+  // Save is Trello's own path and always works without Impact (spec rule 1); it ends any unsaved review of this date.
   const commit = (next: CardDates) => {
     dispatch({ type: 'card/setDates', cardId: card.id, dates: next })
-    if (pending) discardDraft()
+    if (pending) cancelDraft()
+    onDone()
+  }
+  const isChanged = !!dates.dueDate && dates.dueDate !== card.dueDate
+  const reviewImpact = () => {
+    // Unchanged proposed dates reopen the kept review; anything new is checked again.
+    if (pending && session?.review && JSON.stringify(dates) === JSON.stringify(pending.dates)) reopenReview()
+    else startDateChange(card.id, dates)
     onDone()
   }
   const save = () => commit(dates)
-  // Trello Impact: moving an existing due date can be reviewed before anything is saved.
-  const isReviewableChange = preferences.isImpactEnabled && !card.isDraft && !!card.dueDate && !!dates.dueDate && dates.dueDate !== card.dueDate
 
   const pick = (iso: string) => {
     if (active === 'start') {
@@ -272,28 +277,21 @@ export function DatesPicker({ card, onDone }: { card: Card; onDone: () => void }
       </Stack>
 
       <Stack space="space.100">
-        {isReviewableChange && (
-          <Stack space="space.075">
-            <Button
-              shouldFitContainer
-              iconBefore={AiSparkleIcon}
-              onClick={() => {
-                startDateChange(card.id, dates)
-                onDone()
-              }}
-            >
-              Review impact
+        <Box xcss={styles.actions}>
+          <Box xcss={styles.action}>
+            <Button appearance="primary" shouldFitContainer onClick={save}>
+              Save
             </Button>
-            <Inline alignInline="center">
-              <Text size="small" color="color.text.subtle">
-                Review without saving.
-              </Text>
-            </Inline>
-          </Stack>
-        )}
-        <Button appearance="primary" shouldFitContainer onClick={save}>
-          Save
-        </Button>
+          </Box>
+          {/* Impact adds only this second button beside Save, for a changed due date. */}
+          {isChanged && (
+            <Box xcss={styles.action}>
+              <Button shouldFitContainer iconBefore={AiSparkleIcon} onClick={reviewImpact}>
+                Review impact
+              </Button>
+            </Box>
+          )}
+        </Box>
         <Button shouldFitContainer isDisabled={!card.dueDate && !card.startDate} onClick={() => commit({})}>
           Remove
         </Button>

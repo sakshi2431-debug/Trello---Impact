@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export const settingsSections = ['profile', 'activity', 'cards', 'preferences', 'ai', 'members', 'workspace', 'export'] as const
+const settingsSections = ['profile', 'activity', 'cards', 'preferences', 'members', 'workspace', 'export'] as const
 export type SettingsSection = (typeof settingsSections)[number]
 
 export type Route =

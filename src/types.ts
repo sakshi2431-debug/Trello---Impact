@@ -65,6 +65,15 @@ export interface Comment {
   text: string
   createdAt: number
   editedAt?: number
+  /** Set on comments posted by a Trello Impact review, so the card owner can answer it. */
+  impact?: ImpactQuestion
+}
+
+/** The owner's answer to a question Impact asked: linking the cards is the only thing that confirms a connection. */
+export interface ImpactQuestion {
+  /** The card the review created or changed, which Link cards attaches. */
+  reviewCardId: string
+  response?: 'linked' | 'not-related'
 }
 
 export interface Activity {
@@ -116,6 +125,8 @@ export interface Card {
   isWatching?: boolean
   /** When the current user last opened this card; feeds Recently viewed in the Attach popover. */
   lastViewedAt?: number
+  /** Earlier titles, so sentences written before a rename still name this card (Impact dependencies). */
+  previousTitles?: string[]
   checklists: Checklist[]
   attachments: Attachment[]
   comments: Comment[]
@@ -161,15 +172,12 @@ export interface Notification {
 
 export type PanelName = 'inbox' | 'planner' | 'board'
 
-export type ImpactSimulation = 'success' | 'comment-fails' | 'outcome-unknown' | 'create-fails'
 
 export interface Preferences {
   /** Show label names on card fronts instead of colour bars. */
   showLabelText: boolean
   /** Trello Impact: review what a new card or date change may affect before committing it. */
-  isImpactEnabled: boolean
   /** Research control: how simulated Impact execution behaves, to exercise results and recovery states. */
-  impactSimulation: ImpactSimulation
   /** Panels shown on the board screen, toggled from the bottom navigation bar. */
   panels: Record<PanelName, boolean>
   isTemplatesPromoDismissed: boolean

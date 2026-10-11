@@ -11,7 +11,6 @@ import { Box } from '@atlaskit/primitives/compiled/box'
 import { Inline } from '@atlaskit/primitives/compiled/inline'
 import { Stack } from '@atlaskit/primitives/compiled/stack'
 import { Text } from '@atlaskit/primitives/compiled/text'
-import Select from '@atlaskit/select'
 import Textarea from '@atlaskit/textarea'
 import Textfield from '@atlaskit/textfield'
 import Toggle from '@atlaskit/toggle'
@@ -20,12 +19,9 @@ import { membersById } from '../../data/members'
 import { formatRelativeTime, formatShortDate, getDueStatus } from '../../lib/dates'
 import { paths } from '../../router'
 import { useAppState, useDispatch } from '../../state/store'
-import type { ImpactSimulation } from '../../types'
 import { MemberAvatar } from '../common/MemberAvatar'
-import { ImpactIntroButton } from './ImpactIntro'
 
 const styles = cssMap({
-  select: { maxWidth: '22rem' },
   page: { maxWidth: '50rem', paddingBlock: token('space.400'), paddingInline: token('space.500') },
   setting: {
     display: 'flex',
@@ -227,48 +223,6 @@ export function PreferenceSettings() {
           onChange={() => dispatch({ type: 'preferences/update', patch: { isTemplatesPromoDismissed: !preferences.isTemplatesPromoDismissed } })}
         />
       </Box>
-    </SettingsPage>
-  )
-}
-
-const simulationOptions: { label: string; value: ImpactSimulation }[] = [
-  { label: 'Every action succeeds', value: 'success' },
-  { label: 'Last comment fails', value: 'comment-fails' },
-  { label: 'Last comment outcome unknown', value: 'outcome-unknown' },
-  { label: 'Card creation or date save fails', value: 'create-fails' },
-]
-
-export function AiSettings() {
-  const { preferences } = useAppState()
-  const dispatch = useDispatch()
-  return (
-    <SettingsPage title="AI settings" description="Choose which AI features help you plan your work.">
-      <Box>
-        <SettingRow
-          id="ai-impact"
-          title="Trello Impact"
-          description="When you add a card or change a date, review which other cards may need attention and why, and approve exact actions before anything changes."
-          isChecked={preferences.isImpactEnabled}
-          onChange={() => dispatch({ type: 'preferences/update', patch: { isImpactEnabled: !preferences.isImpactEnabled } })}
-        />
-      </Box>
-      <Box>
-        <ImpactIntroButton />
-      </Box>
-      <Stack space="space.050">
-        <Label htmlFor="impact-simulation">Simulated execution (research prototype)</Label>
-        <Box xcss={styles.select}>
-          <Select
-            inputId="impact-simulation"
-            options={simulationOptions}
-            value={simulationOptions.find((o) => o.value === preferences.impactSimulation)}
-            onChange={(o) => o && dispatch({ type: 'preferences/update', patch: { impactSimulation: o.value } })}
-          />
-        </Box>
-        <Text size="small" color="color.text.subtle">
-          Choose how Apply behaves so sessions can cover results and recovery. Suggestions are scripted.
-        </Text>
-      </Stack>
     </SettingsPage>
   )
 }

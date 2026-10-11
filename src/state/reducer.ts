@@ -1,7 +1,7 @@
 import { formatShortDate, formatTime } from '../lib/dates'
 import { createId } from '../lib/random'
 import type { CardTemplate } from '../data/templates'
-import type { AccentColor, AppState, Attachment, Board, Card, CardDates, Label, PanelName, Preferences, Visibility } from '../types'
+import type { AccentColor, AppState, Attachment, Board, Card, CardDates, ImpactQuestion, Label, PanelName, Preferences, Visibility } from '../types'
 
 export type Action =
   | { type: 'reset'; state: AppState }
@@ -54,7 +54,10 @@ export type Action =
   | { type: 'card/deleteChecklistItem'; cardId: string; checklistId: string; itemId: string }
   | { type: 'card/addAttachment'; cardId: string; attachment: Omit<Attachment, 'id' | 'addedAt' | 'addedBy'> }
   | { type: 'card/removeAttachment'; cardId: string; attachmentId: string }
-  | { type: 'card/addComment'; cardId: string; text: string; id?: string }
+  | { type: 'card/addComment'; cardId: string; text: string; id?: string; impact?: ImpactQuestion }
+  | { type: 'comment/answerImpact'; cardId: string; commentId: string; response: 'linked' | 'not-related' }
+  | { type: 'card/linkImpact'; cardId: string; linkedCardId: string }
+  | { type: 'card/setDescription'; cardId: string; description: string }
   | { type: 'card/editComment'; cardId: string; commentId: string; text: string }
   | { type: 'card/deleteComment'; cardId: string; commentId: string }
   | { type: 'card/setArchived'; cardId: string; isArchived: boolean }
@@ -85,7 +88,11 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, notifications: state.notifications.map((n) => (n.id === action.id ? { ...n, isRead: true } : n)) }
 
     case 'board/create': {
-      const listSeeds = action.lists ?? [{ title: 'To do', cards: [] }, { title: 'Doing', cards: [] }, { title: 'Done', cards: [] }]
+      const listSeeds = action.lists ?? [
+        { title: 'To do', cards: [] },
+        { title: 'Doing', cards: [] },
+        { title: 'Done', cards: [] },
+      ]
       const lists = { ...state.lists }
       const cards = { ...state.cards }
       const now = Date.now()
@@ -134,7 +141,10 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'board/setClosed': {
       const board = state.boards[action.boardId]
-      return { ...state, boards: { ...state.boards, [board.id]: { ...board, isClosed: action.isClosed, isStarred: action.isClosed ? false : board.isStarred } } }
+      return {
+        ...state,
+        boards: { ...state.boards, [board.id]: { ...board, isClosed: action.isClosed, isStarred: action.isClosed ? false : board.isStarred } },
+      }
     }
 
     case 'preferences/update':
@@ -262,7 +272,18 @@ export function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'card/update':
-      return updateCard(state, action.cardId, (card) => ({ ...card, ...action.patch }))
+      return updateCard(state, action.cardId, (card) => {
+        // Remember the old title, so other cards' sentences that name it keep pointing here.
+        const renamed = action.patch.title !== undefined && action.patch.title !== card.title
+        const previousTitles = renamed ? [...new Set([...(card.previousTitles ?? []), card.title])].filter((t) => t !== action.patch.title) : card.previousTitles
+        return { ...card, ...action.patch, previousTitles }
+      })
+
+    // A description saved by an approved Impact action, recorded in the card's activity.
+    case 'card/setDescription':
+      return updateCard(state, action.cardId, (card) =>
+        withActivity(state, { ...card, description: action.description }, 'updated the description of this card'),
+      )
 
     case 'card/move': {
       const card = state.cards[action.cardId]
@@ -278,9 +299,13 @@ export function reducer(state: AppState, action: Action): AppState {
       let moved: Card = { ...card, listId: to.id, boardId: to.boardId }
       if (from.id !== to.id) {
         const crossBoard = from.boardId !== to.boardId
-        moved = withActivity(state, moved, crossBoard
-          ? `moved this card from ${state.boards[from.boardId].title} to ${state.boards[to.boardId].title}`
-          : `moved this card from ${from.title} to ${to.title}`)
+        moved = withActivity(
+          state,
+          moved,
+          crossBoard
+            ? `moved this card from ${state.boards[from.boardId].title} to ${state.boards[to.boardId].title}`
+            : `moved this card from ${from.title} to ${to.title}`,
+        )
         if (crossBoard) moved.labelIds = []
       }
       return { ...state, lists, cards: { ...state.cards, [card.id]: moved } }
@@ -325,7 +350,11 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'card/toggleDueComplete':
       return updateCard(state, action.cardId, (card) =>
-        withActivity(state, { ...card, isDueComplete: !card.isDueComplete }, card.isDueComplete ? 'marked the due date incomplete' : 'marked the due date complete'),
+        withActivity(
+          state,
+          { ...card, isDueComplete: !card.isDueComplete },
+          card.isDueComplete ? 'marked the due date incomplete' : 'marked the due date complete',
+        ),
       )
 
     case 'card/createDraft': {
@@ -377,7 +406,11 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'card/addChecklist':
       return updateCard(state, action.cardId, (card) =>
-        withActivity(state, { ...card, checklists: [...card.checklists, { id: createId('cl'), title: action.title, items: [] }] }, `added ${action.title} to this card`),
+        withActivity(
+          state,
+          { ...card, checklists: [...card.checklists, { id: createId('cl'), title: action.title, items: [] }] },
+          `added ${action.title} to this card`,
+        ),
       )
 
     case 'card/deleteChecklist':
@@ -424,8 +457,58 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'card/addComment':
       return updateCard(state, action.cardId, (card) => ({
         ...card,
-        comments: [{ id: action.id ?? createId('cm'), authorId: state.currentUserId, text: action.text, createdAt: Date.now() }, ...card.comments],
+        comments: [
+          { id: action.id ?? createId('cm'), authorId: state.currentUserId, text: action.text, createdAt: Date.now(), impact: action.impact },
+          ...card.comments,
+        ],
       }))
+
+    // The owner answers an Impact question. Link cards attaches the review's card, which confirms the connection.
+    case 'comment/answerImpact': {
+      const card = state.cards[action.cardId]
+      const comment = card?.comments.find((c) => c.id === action.commentId)
+      const linked = comment?.impact ? state.cards[comment.impact.reviewCardId] : undefined
+      // Only the card's owner answers; a connection is confirmed only when the owner links the cards (spec rule 4).
+      if (!card || !comment?.impact || comment.impact.response || card.memberIds[0] !== state.currentUserId) return state
+      const ownerId = state.currentUserId
+      const answered = {
+        ...card,
+        comments: card.comments.map((c) => (c.id === comment.id ? { ...c, impact: { ...comment.impact!, response: action.response } } : c)),
+      }
+      if (action.response === 'not-related' || !linked) return { ...state, cards: { ...state.cards, [card.id]: answered } }
+      const attachment = { id: createId('at'), name: linked.title, kind: 'card', cardId: linked.id, sizeBytes: 0, addedAt: Date.now(), addedBy: ownerId }
+      const withLink = {
+        ...answered,
+        attachments: [...answered.attachments, attachment],
+        activity: [{ id: createId('ac'), actorId: ownerId, text: `linked ${linked.title} to this card`, createdAt: Date.now() }, ...answered.activity],
+      }
+      return { ...state, cards: { ...state.cards, [card.id]: withLink } }
+    }
+
+    // The owner links a possible connection from the Impact summary. Only the card's owner can, which confirms it (spec rule 4).
+    case 'card/linkImpact': {
+      const card = state.cards[action.cardId]
+      const linked = state.cards[action.linkedCardId]
+      if (!card || !linked || card.memberIds[0] !== state.currentUserId || card.attachments.some((a) => a.cardId === linked.id)) return state
+      const ownerId = state.currentUserId
+      // An open question about the same card is answered by the link.
+      const comments = card.comments.map((c) =>
+        c.impact?.reviewCardId === linked.id && !c.impact.response ? { ...c, impact: { ...c.impact, response: 'linked' as const } } : c,
+      )
+      const attachment = { id: createId('at'), name: linked.title, kind: 'card', cardId: linked.id, sizeBytes: 0, addedAt: Date.now(), addedBy: ownerId }
+      return {
+        ...state,
+        cards: {
+          ...state.cards,
+          [card.id]: {
+            ...card,
+            comments,
+            attachments: [...card.attachments, attachment],
+            activity: [{ id: createId('ac'), actorId: ownerId, text: `linked ${linked.title} to this card`, createdAt: Date.now() }, ...card.activity],
+          },
+        },
+      }
+    }
 
     case 'card/editComment':
       return updateCard(state, action.cardId, (card) => ({

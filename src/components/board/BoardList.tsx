@@ -270,11 +270,14 @@ function CardTemplateMenu({ listId }: { listId: string }) {
   )
 }
 
-export function AddCardComposer({ listId, position, onClose }: { listId: string; position: 'top' | 'bottom'; onClose: () => void }) {
+function AddCardComposer({ listId, position, onClose }: { listId: string; position: 'top' | 'bottom'; onClose: () => void }) {
   const dispatch = useDispatch()
-  const { preferences } = useAppState()
-  const { startDraft } = useImpact()
-  const [title, setTitle] = useState('')
+  const { cards } = useAppState()
+  const impact = useImpact()
+  // A draft kept with "Keep draft and close" comes back when Add a card is chosen in its list (spec rule 8).
+  const keptId = impact.session?.cardId
+  const kept = keptId && cards[keptId]?.isDraft && cards[keptId].listId === listId ? cards[keptId] : undefined
+  const [title, setTitle] = useState(kept?.title ?? '')
   const ref = useRef<HTMLTextAreaElement>(null)
 
   // Trello Impact: stage the card and review what it may affect before it is added.
@@ -283,7 +286,18 @@ export function AddCardComposer({ listId, position, onClose }: { listId: string;
       ref.current?.focus()
       return
     }
-    const id = startDraft(listId, title.trim())
+    if (kept) {
+      // The kept review comes back as it was, unless the title changed and needs checking again.
+      if (title.trim() === kept.title && impact.session?.review) impact.reopenReview()
+      else {
+        impact.updateDraftTitle(title)
+        impact.review()
+      }
+      onClose()
+      navigate(paths.card(kept.id))
+      return
+    }
+    const id = impact.startDraft(listId, title.trim())
     onClose()
     navigate(paths.card(id))
   }
@@ -293,9 +307,18 @@ export function AddCardComposer({ listId, position, onClose }: { listId: string;
       ref.current?.focus()
       return
     }
-    dispatch({ type: 'card/create', id: createId('c'), listId, title: title.trim(), position })
+    if (kept) {
+      impact.updateDraftTitle(title)
+      impact.addCard()
+    } else dispatch({ type: 'card/create', id: createId('c'), listId, title: title.trim(), position })
     setTitle('')
     ref.current?.focus()
+  }
+
+  // Trello's Cancel discards a kept draft; Escape only closes the composer.
+  const cancel = () => {
+    if (kept) impact.cancelDraft()
+    onClose()
   }
 
   return (
@@ -321,12 +344,10 @@ export function AddCardComposer({ listId, position, onClose }: { listId: string;
         <Button appearance="primary" onClick={submit}>
           Add card
         </Button>
-        {preferences.isImpactEnabled && (
-          <Button iconBefore={AiSparkleIcon} onClick={reviewImpact}>
-            Review impact
-          </Button>
-        )}
-        <IconButton appearance="subtle" icon={CloseIcon} label="Cancel adding a card" onClick={onClose} />
+        <Button iconBefore={AiSparkleIcon} onClick={reviewImpact}>
+          Review impact
+        </Button>
+        <IconButton appearance="subtle" icon={CloseIcon} label="Cancel adding a card" onClick={cancel} />
       </Inline>
     </Stack>
   )

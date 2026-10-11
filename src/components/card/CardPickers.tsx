@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import Button from '@atlaskit/button/new'
 import { Checkbox } from '@atlaskit/checkbox'
 import { cssMap } from '@atlaskit/css'
-import { Label, RequiredAsterisk } from '@atlaskit/form'
+import { ErrorMessage, Label, RequiredAsterisk } from '@atlaskit/form'
 import BoardIcon from '@atlaskit/icon/core/board'
 import CardIcon from '@atlaskit/icon/core/card'
 import CheckMarkIcon from '@atlaskit/icon/core/check-mark'
@@ -23,6 +23,7 @@ import type { AccentColor, Board, Card } from '../../types'
 import { ACCENTS } from '../common/accent'
 import { LabelChip, LabelColorOption } from '../common/LabelChip'
 import { MemberAvatar } from '../common/MemberAvatar'
+import { safeLinkUrl } from '../../lib/urls'
 
 const styles = cssMap({
   bleed: { marginInline: token('space.negative.150') },
@@ -174,6 +175,7 @@ export function AttachmentPicker({ card, onDone }: { card: Card; onDone: () => v
   const dispatch = useDispatch()
   const fileRef = useRef<HTMLInputElement>(null)
   const [link, setLink] = useState('')
+  const [linkError, setLinkError] = useState<string | null>(null)
   const [display, setDisplay] = useState('')
   const linked = new Set(card.attachments.map((a) => a.cardId).filter(Boolean))
   const query = link.trim().toLowerCase()
@@ -194,7 +196,12 @@ export function AttachmentPicker({ card, onDone }: { card: Card; onDone: () => v
   const attachRecent = (item: (typeof recent)[number]) => {
     const name = display.trim() || item.title
     if (item.kind === 'card') dispatch({ type: 'card/addAttachment', cardId: card.id, attachment: { name, kind: 'card', cardId: item.id, sizeBytes: 0 } })
-    else dispatch({ type: 'card/addAttachment', cardId: card.id, attachment: { name, kind: 'link', url: `${location.origin}${location.pathname}${paths.board(item.id)}`, sizeBytes: 0 } })
+    else
+      dispatch({
+        type: 'card/addAttachment',
+        cardId: card.id,
+        attachment: { name, kind: 'link', url: `${location.origin}${location.pathname}${paths.board(item.id)}`, sizeBytes: 0 },
+      })
     onDone()
   }
 
@@ -203,7 +210,13 @@ export function AttachmentPicker({ card, onDone }: { card: Card; onDone: () => v
       onSubmit={(e) => {
         e.preventDefault()
         if (!link.trim()) return
-        dispatch({ type: 'card/addAttachment', cardId: card.id, attachment: { name: display.trim() || link.trim(), kind: 'link', url: link.trim(), sizeBytes: 0 } })
+        // Only web and email links are attached; anything that could run code when clicked is refused.
+        const url = safeLinkUrl(link)
+        if (!url) {
+          setLinkError('Enter a web address, such as https://example.com.')
+          return
+        }
+        dispatch({ type: 'card/addAttachment', cardId: card.id, attachment: { name: display.trim() || link.trim(), kind: 'link', url, sizeBytes: 0 } })
         onDone()
       }}
     >
@@ -241,11 +254,32 @@ export function AttachmentPicker({ card, onDone }: { card: Card; onDone: () => v
             Search or paste a link
             <RequiredAsterisk />
           </Label>
-          <Textfield id="attach-link" placeholder="Find recent links or paste a new link" value={link} onChange={(e) => setLink(e.currentTarget.value)} />
+          <Textfield
+            id="attach-link"
+            placeholder="Find recent links or paste a new link"
+            value={link}
+            isInvalid={!!linkError}
+            aria-describedby={linkError ? 'attach-link-error' : undefined}
+            onChange={(e) => {
+              setLink(e.currentTarget.value)
+              setLinkError(null)
+            }}
+          />
+          {linkError && (
+            <Box id="attach-link-error">
+              <ErrorMessage>{linkError}</ErrorMessage>
+            </Box>
+          )}
         </Stack>
         <Stack space="space.050">
           <Label htmlFor="attach-display">Display text (optional)</Label>
-          <Textfield id="attach-display" placeholder="Text to display" aria-describedby="attach-display-help" value={display} onChange={(e) => setDisplay(e.currentTarget.value)} />
+          <Textfield
+            id="attach-display"
+            placeholder="Text to display"
+            aria-describedby="attach-display-help"
+            value={display}
+            onChange={(e) => setDisplay(e.currentTarget.value)}
+          />
           <Text size="small" color="color.text.subtle" id="attach-display-help">
             Give this link a title or description
           </Text>
@@ -261,7 +295,13 @@ export function AttachmentPicker({ card, onDone }: { card: Card; onDone: () => v
                   {recent.map((item) => (
                     <ButtonItem
                       key={`${item.kind}-${item.id}`}
-                      iconBefore={item.kind === 'card' ? <CardIcon label="Card" color={token('color.icon.information')} /> : <BoardIcon label="Board" color={token('color.icon.information')} />}
+                      iconBefore={
+                        item.kind === 'card' ? (
+                          <CardIcon label="Card" color={token('color.icon.information')} />
+                        ) : (
+                          <BoardIcon label="Board" color={token('color.icon.information')} />
+                        )
+                      }
                       description={`${item.where} · Viewed ${formatRelativeTime(item.viewedAt)}`}
                       onClick={() => attachRecent(item)}
                     >
