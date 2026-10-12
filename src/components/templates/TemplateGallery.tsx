@@ -13,7 +13,7 @@ import { token } from '@atlaskit/tokens'
 import type { BoardTemplate } from '../../data/templates'
 import { createId } from '../../lib/random'
 import { navigate, paths } from '../../router'
-import { useDispatch } from '../../state/store'
+import { useAppState, useDispatch } from '../../state/store'
 import { BoardThumbnail } from '../common/BoardSwatch'
 
 const styles = cssMap({
@@ -90,6 +90,7 @@ export function TemplateGrid({ templates }: { templates: BoardTemplate[] }) {
 
 function TemplatePreview({ template, onClose }: { template: BoardTemplate; onClose: () => void }) {
   const dispatch = useDispatch()
+  const { boards } = useAppState()
   return (
     <Modal onClose={onClose} width="large">
       <ModalHeader hasCloseButton>
@@ -127,9 +128,10 @@ function TemplatePreview({ template, onClose }: { template: BoardTemplate; onClo
           appearance="primary"
           onClick={() => {
             const id = createId('b')
-            dispatch({ type: 'board/create', id, title: template.title.replace(/ template$/i, ''), accent: template.accent, visibility: 'workspace', lists: template.lists })
+            const title = template.title.replace(/ template$/i, '')
+            dispatch({ type: 'board/create', id, title, accent: template.accent, visibility: 'workspace', lists: template.lists })
             onClose()
-            navigate(paths.board(id))
+            navigate(paths.board({ id, title }, boards))
           }}
         >
           Use template

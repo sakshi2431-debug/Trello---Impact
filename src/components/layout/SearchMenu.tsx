@@ -78,7 +78,7 @@ function SearchPanel({ onDone }: { onDone: () => void }) {
           onKeyDown={(e) => {
             if (e.key !== 'Enter') return
             if (results.cards[0]) go(paths.card(results.cards[0].id))
-            else if (results.boards[0]) go(paths.board(results.boards[0].id))
+            else if (results.boards[0]) go(paths.board(results.boards[0], boards))
           }}
         />
       </Box>
@@ -100,7 +100,7 @@ function SearchPanel({ onDone }: { onDone: () => void }) {
         {results.boards.length > 0 && (
           <Section title={q ? 'Boards' : 'Recent boards'} hasSeparator={results.cards.length > 0}>
             {results.boards.map((board) => (
-              <ButtonItem key={board.id} iconBefore={<BoardSwatch accent={board.accent} />} onClick={() => go(paths.board(board.id))}>
+              <ButtonItem key={board.id} iconBefore={<BoardSwatch accent={board.accent} />} onClick={() => go(paths.board(board, boards))}>
                 {board.title}
               </ButtonItem>
             ))}

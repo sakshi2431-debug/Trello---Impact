@@ -278,6 +278,7 @@ function CompleteIcon(props: NewCoreIconProps) {
 
 function CardDetails({ card, board, list, onClose }: { card: Card; board: Board; list?: List; onClose: () => void }) {
   const dispatch = useDispatch()
+  const { boards } = useAppState()
   const { showFlag } = useFlags()
   const impact = useImpact()
   const hasImpact = impact.session?.cardId === card.id
@@ -615,7 +616,7 @@ function CardDetails({ card, board, list, onClose }: { card: Card; board: Board;
                         appearance="subtle"
                         onClick={() => {
                           impact.cancelDraft()
-                          navigate(paths.board(board.id))
+                          navigate(paths.board(board, boards))
                         }}
                       >
                         Cancel

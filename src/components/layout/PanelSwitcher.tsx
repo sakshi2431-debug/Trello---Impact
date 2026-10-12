@@ -124,7 +124,7 @@ function BoardSwitcher({ onDone }: { onDone: () => void }) {
 
   const go = (board: Board) => {
     onDone()
-    navigate(paths.board(board.id))
+    navigate(paths.board(board, boards))
   }
 
   return (

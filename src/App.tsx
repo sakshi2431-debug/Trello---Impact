@@ -16,7 +16,7 @@ import { TemplatesPage } from './components/templates/TemplatesPage'
 import { MembersPage } from './components/workspace/MembersPage'
 import { SettingsPage as WorkspaceSettingsPage } from './components/workspace/SettingsPage'
 import { ImpactProvider } from './impact/ImpactProvider'
-import { navigate, paths, useRoute, type Route, type SettingsSection } from './router'
+import { navigate, paths, resolveBoardRef, useRoute, type Route, type SettingsSection } from './router'
 import { ScreenBoardContext } from './state/screen'
 import { StoreProvider, useAppState } from './state/store'
 import { UiProvider } from './state/ui'
@@ -62,8 +62,16 @@ function Shell() {
   const card = route.name === 'card' ? cards[route.cardId] : undefined
   // Cards opened from the Inbox or Planner keep the board screen they came from behind them.
   const fromBoardId = route.name === 'card' ? route.fromBoardId : undefined
-  const boardId = route.name === 'board' ? route.boardId : (fromBoardId ?? (card && card.boardId !== inboxBoardId ? card.boardId : undefined))
+  // An unknown board address keeps its text as the id, so the board panel shows "Board not found".
+  const routeBoardId = route.name === 'board' ? (resolveBoardRef(route.boardRef, boards) ?? route.boardRef) : undefined
+  const boardId = routeBoardId ?? fromBoardId ?? (card && card.boardId !== inboxBoardId ? card.boardId : undefined)
   const hasSideNav = !boardId
+
+  // Older links (#/b/b-launch) and renamed boards show the board's current readable address.
+  const canonicalBoardHash = routeBoardId && boards[routeBoardId] ? paths.board(boards[routeBoardId], boards) : undefined
+  useEffect(() => {
+    if (canonicalBoardHash && window.location.hash !== canonicalBoardHash) history.replaceState(null, '', canonicalBoardHash)
+  }, [canonicalBoardHash])
 
   useEffect(() => {
     const board = boardId ? boards[boardId] : undefined
@@ -83,7 +91,7 @@ function Shell() {
       <ScreenBoardContext.Provider value={boardId}>
         <ModalTransition>
           {card && (
-            <CardModal key={card.id} cardId={card.id} onClose={() => navigate(boardId ? paths.board(boardId) : paths.boards())} />
+            <CardModal key={card.id} cardId={card.id} onClose={() => navigate(boardId && boards[boardId] ? paths.board(boards[boardId], boards) : paths.boards())} />
           )}
         </ModalTransition>
       </ScreenBoardContext.Provider>

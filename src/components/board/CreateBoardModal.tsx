@@ -12,7 +12,7 @@ import Textfield from '@atlaskit/textfield'
 import { token } from '@atlaskit/tokens'
 import { createId } from '../../lib/random'
 import { navigate, paths } from '../../router'
-import { useDispatch } from '../../state/store'
+import { useAppState, useDispatch } from '../../state/store'
 import { useUi } from '../../state/ui'
 import type { AccentColor, Visibility } from '../../types'
 import { ACCENTS } from '../common/accent'
@@ -50,6 +50,7 @@ export function CreateBoardModal() {
 
 function CreateBoardDialog({ onClose }: { onClose: () => void }) {
   const dispatch = useDispatch()
+  const { boards } = useAppState()
   const [title, setTitle] = useState('')
   const [accent, setAccent] = useState<AccentColor>('blue')
   const [visibility, setVisibility] = useState<Visibility>('workspace')
@@ -62,7 +63,7 @@ function CreateBoardDialog({ onClose }: { onClose: () => void }) {
     const id = createId('b')
     dispatch({ type: 'board/create', id, title: title.trim(), accent, visibility })
     onClose()
-    navigate(paths.board(id))
+    navigate(paths.board({ id, title: title.trim() }, boards))
   }
 
   return (

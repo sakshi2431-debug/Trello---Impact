@@ -6,6 +6,7 @@ import { Pressable } from '@atlaskit/primitives/compiled/pressable'
 import { Text } from '@atlaskit/primitives/compiled/text'
 import { token } from '@atlaskit/tokens'
 import { paths } from '../../router'
+import { useAppState } from '../../state/store'
 import type { Board } from '../../types'
 import { BoardThumbnail } from '../common/BoardSwatch'
 import { StarButton } from '../common/StarButton'
@@ -59,6 +60,7 @@ const styles = cssMap({
 })
 
 export function BoardTile({ board }: { board: Board }) {
+  const { boards } = useAppState()
   // Trello only shows the star on hover or focus, unless the board is starred.
   const [isActive, setActive] = useState(false)
   return (
@@ -69,7 +71,7 @@ export function BoardTile({ board }: { board: Board }) {
       onFocus={() => setActive(true)}
       onBlur={() => setActive(false)}
     >
-      <Anchor href={paths.board(board.id)} xcss={styles.link}>
+      <Anchor href={paths.board(board, boards)} xcss={styles.link}>
         <Box xcss={styles.thumb}>
           <BoardThumbnail accent={board.accent} />
         </Box>

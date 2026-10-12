@@ -83,7 +83,7 @@ function AppSwitcherMenu() {
             {recent.length > 0 && (
               <Section title="Recent boards" hasSeparator>
                 {recent.map((board) => (
-                  <ButtonItem key={board.id} iconBefore={<BoardSwatch accent={board.accent} />} onClick={() => go(paths.board(board.id))}>
+                  <ButtonItem key={board.id} iconBefore={<BoardSwatch accent={board.accent} />} onClick={() => go(paths.board(board, boards))}>
                     {board.title}
                   </ButtonItem>
                 ))}

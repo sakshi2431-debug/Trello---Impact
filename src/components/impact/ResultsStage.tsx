@@ -207,7 +207,7 @@ export function ResultsStage({ card, headingRef }: { card: Card; headingRef: Ref
   const askedNames = [...new Set(posted.map((p) => ownerName(state.cards[p.connection.cardId])).filter((n): n is string => !!n))]
   const leave = () => {
     finish()
-    navigate(paths.board(card.boardId))
+    navigate(paths.board(state.boards[card.boardId] ?? { id: card.boardId, title: '' }, state.boards))
   }
 
   return (

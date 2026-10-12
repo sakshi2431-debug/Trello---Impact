@@ -200,7 +200,7 @@ export function AttachmentPicker({ card, onDone }: { card: Card; onDone: () => v
       dispatch({
         type: 'card/addAttachment',
         cardId: card.id,
-        attachment: { name, kind: 'link', url: `${location.origin}${location.pathname}${paths.board(item.id)}`, sizeBytes: 0 },
+        attachment: { name, kind: 'link', url: `${location.origin}${location.pathname}${paths.board(item, boards)}`, sizeBytes: 0 },
       })
     onDone()
   }
